@@ -8,7 +8,7 @@ export class NetworkManager {
     this.otherPlayers = new Map();
     this.eventHandlers = new Map();
 
-    this.serverUrl = "http://localhost:5286/gamehub";
+    this.serverUrl = `${import.meta.env.VITE_APP_API_URL}/gamehub`;
   }
 
   async connect() {
