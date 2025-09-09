@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Frostbite - Multiplayer Snowball Fight</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: linear-gradient(135deg, #87ceeb 0%, #e0f6ff 100%);
+        font-family: "Arial", sans-serif;
+      }
+
+      #gameContainer {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+      }
+
+      #ui {
+        position: absolute;
+        top: 0;
+        left: 0;
+        z-index: 100;
+        padding: 20px;
+        color: white;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+      }
+
+      #healthBar {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        width: 200px;
+        height: 20px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 2px solid white;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+
+      #healthFill {
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(
+          90deg,
+          #ff4444 0%,
+          #ffaa44 50%,
+          #44ff44 100%
+        );
+        transition: width 0.3s ease;
+      }
+
+      #controls {
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 15px;
+        border-radius: 10px;
+        color: white;
+      }
+
+      #crosshair {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 20px;
+        height: 20px;
+        pointer-events: none;
+        z-index: 50;
+      }
+
+      #crosshair::before,
+      #crosshair::after {
+        content: "";
+        position: absolute;
+        background: white;
+        box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+      }
+
+      #crosshair::before {
+        width: 2px;
+        height: 20px;
+        left: 9px;
+        top: 0;
+      }
+
+      #crosshair::after {
+        width: 20px;
+        height: 2px;
+        left: 0;
+        top: 9px;
+      }
+
+      .respawn-screen {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        color: white;
+        font-size: 24px;
+        z-index: 200;
+      }
+
+      .respawn-timer {
+        font-size: 48px;
+        color: #ff4444;
+        margin: 20px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="gameContainer">
+      <div id="ui">
+        <h2>Frostbite</h2>
+        <div>Player: <span id="playerName">Connecting...</span></div>
+        <div>Body Temperature: <span id="temperature">37.0°C</span></div>
+        <div>Players Online: <span id="playerCount">1</span></div>
+      </div>
+
+      <div id="healthBar">
+        <div id="healthFill"></div>
+      </div>
+
+      <div id="crosshair"></div>
+
+      <div id="controls">
+        <div><strong>Controls:</strong></div>
+        <div>WASD - Move</div>
+        <div>Mouse - Look around</div>
+        <div>Click - Throw snowball</div>
+        <div>Space - Jump</div>
+      </div>
+
+      <div id="respawnScreen" class="respawn-screen">
+        <div>You've been frozen out!</div>
+        <div class="respawn-timer" id="respawnTimer">5</div>
+        <div>Warming up for respawn...</div>
+      </div>
+    </div>
+
+    <script type="module" src="src/main.js"></script>
+  </body>
+</html>

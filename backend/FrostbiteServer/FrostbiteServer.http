@@ -1,0 +1,6 @@
+@FrostbiteServer_HostAddress = http://localhost:5286
+
+GET {{FrostbiteServer_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
