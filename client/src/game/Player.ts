@@ -1,36 +1,65 @@
 import * as THREE from "three";
+import { NetworkManager } from "./NetworkManager";
+
+interface Snowball {
+  mesh: THREE.Mesh;
+  velocity: THREE.Vector3;
+  lifetime: number;
+  age: number;
+}
+
+interface MoveInput {
+  forward: boolean;
+  backward: boolean;
+  left: boolean;
+  right: boolean;
+}
+
+interface MouseInput {
+  x: number;
+  y: number;
+}
 
 export class Player {
-  constructor(scene, camera, networkManager = null) {
+  public scene: THREE.Scene;
+  public camera: THREE.PerspectiveCamera;
+  public networkManager: NetworkManager | null;
+  public mesh!: THREE.Mesh;
+
+  // Player properties
+  public position: THREE.Vector3 = new THREE.Vector3(0, 1, 0);
+  public velocity: THREE.Vector3 = new THREE.Vector3(0, 0, 0);
+  public rotation: THREE.Euler = new THREE.Euler(0, 0, 0);
+
+  // Player stats
+  public health: number = 100;
+  public maxHealth: number = 100;
+  public bodyTemperature: number = 37.0; // Normal body temperature in Celsius
+  public isAlive: boolean = true;
+  public respawnTime: number = 0;
+
+  // Movement properties
+  public speed: number = 5;
+  public jumpPower: number = 8;
+  public isGrounded: boolean = true;
+  public gravity: number = -20;
+
+  // Look sensitivity
+  public mouseSensitivity: number = 0.002;
+
+  // Snowball properties
+  public snowballs: Snowball[] = [];
+  public snowballCooldown: number = 0;
+  public snowballCooldownTime: number = 0.5;
+
+  constructor(
+    scene: THREE.Scene,
+    camera: THREE.PerspectiveCamera,
+    networkManager: NetworkManager | null = null
+  ) {
     this.scene = scene;
     this.camera = camera;
     this.networkManager = networkManager;
-
-    // Player properties
-    this.position = new THREE.Vector3(0, 1, 0);
-    this.velocity = new THREE.Vector3(0, 0, 0);
-    this.rotation = new THREE.Euler(0, 0, 0);
-
-    // Player stats
-    this.health = 100;
-    this.maxHealth = 100;
-    this.bodyTemperature = 37.0; // Normal body temperature in Celsius
-    this.isAlive = true;
-    this.respawnTime = 0;
-
-    // Movement properties
-    this.speed = 5;
-    this.jumpPower = 8;
-    this.isGrounded = true;
-    this.gravity = -20;
-
-    // Look sensitivity
-    this.mouseSensitivity = 0.002;
-
-    // Snowball properties
-    this.snowballs = [];
-    this.snowballCooldown = 0;
-    this.snowballCooldownTime = 0.5;
 
     // Set initial spawn position within limited area
     this.setRandomSpawnPosition();
@@ -39,14 +68,14 @@ export class Player {
   }
 
   // Generate random spawn position within a 10x10 area
-  setRandomSpawnPosition() {
+  setRandomSpawnPosition(): void {
     const spawnRange = 5; // 5 units in each direction from center
     const x = (Math.random() - 0.5) * 2 * spawnRange; // Random between -5 and 5
     const z = (Math.random() - 0.5) * 2 * spawnRange; // Random between -5 and 5
     this.position.set(x, 1, z);
   }
 
-  init() {
+  init(): void {
     // Create player representation (simple capsule for now) - Made larger for visibility
     const geometry = new THREE.CapsuleGeometry(0.8, 2.5, 4, 8);
     const material = new THREE.MeshLambertMaterial({ color: 0x4444ff });
@@ -63,7 +92,11 @@ export class Player {
     this.updateCameraPosition();
   }
 
-  update(deltaTime, moveInput, mouseInput) {
+  update(
+    deltaTime: number,
+    moveInput: MoveInput,
+    mouseInput: MouseInput
+  ): void {
     if (!this.isAlive) {
       this.handleRespawn(deltaTime);
       return;
@@ -134,7 +167,7 @@ export class Player {
     }
   }
 
-  handleMovement(deltaTime, moveInput) {
+  handleMovement(_deltaTime: number, moveInput: MoveInput): void {
     const moveVector = new THREE.Vector3();
 
     // Calculate movement direction based on camera rotation
@@ -175,14 +208,14 @@ export class Player {
     }
   }
 
-  jump() {
+  jump(): void {
     if (this.isGrounded && this.isAlive) {
       this.velocity.y = this.jumpPower;
       this.isGrounded = false;
     }
   }
 
-  throwSnowball() {
+  throwSnowball(): void {
     if (this.snowballCooldown > 0 || !this.isAlive) return;
 
     // Create snowball
@@ -204,9 +237,11 @@ export class Player {
     console.log("Snowball thrown!");
   }
 
-  createSnowball() {
+  createSnowball(): Snowball {
     const geometry = new THREE.SphereGeometry(0.1, 8, 6);
-    const material = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    const material = new THREE.MeshLambertMaterial({
+      color: 0xffffff,
+    });
     const mesh = new THREE.Mesh(geometry, material);
 
     // Position at camera/player position
@@ -218,7 +253,7 @@ export class Player {
     direction.applyQuaternion(this.camera.quaternion);
     direction.normalize();
 
-    const snowball = {
+    const snowball: Snowball = {
       mesh: mesh,
       velocity: direction.multiplyScalar(20),
       lifetime: 5.0,
@@ -228,7 +263,7 @@ export class Player {
     return snowball;
   }
 
-  updateSnowballs(deltaTime) {
+  updateSnowballs(deltaTime: number): void {
     for (let i = this.snowballs.length - 1; i >= 0; i--) {
       const snowball = this.snowballs[i];
 
@@ -251,24 +286,27 @@ export class Player {
     }
   }
 
-  freeze() {
+  freeze(): void {
     this.isAlive = false;
     this.respawnTime = 5.0; // 5 second respawn time
     this.mesh.visible = false;
 
     // Show respawn screen
-    document.getElementById("respawnScreen").style.display = "flex";
+    const respawnScreen = document.getElementById("respawnScreen");
+    if (respawnScreen) {
+      respawnScreen.style.display = "flex";
+    }
 
     console.log("Player frozen out! Respawning in 5 seconds...");
   }
 
-  handleRespawn(deltaTime) {
+  handleRespawn(deltaTime: number): void {
     this.respawnTime -= deltaTime;
 
     // Update respawn timer UI
     const timerElement = document.getElementById("respawnTimer");
     if (timerElement) {
-      timerElement.textContent = Math.ceil(this.respawnTime);
+      timerElement.textContent = Math.ceil(this.respawnTime).toString();
     }
 
     if (this.respawnTime <= 0) {
@@ -276,7 +314,7 @@ export class Player {
     }
   }
 
-  respawn() {
+  respawn(): void {
     this.isAlive = true;
     this.health = this.maxHealth;
     this.bodyTemperature = 37.0;
@@ -287,12 +325,15 @@ export class Player {
     this.velocity.set(0, 0, 0);
 
     // Hide respawn screen
-    document.getElementById("respawnScreen").style.display = "none";
+    const respawnScreen = document.getElementById("respawnScreen");
+    if (respawnScreen) {
+      respawnScreen.style.display = "none";
+    }
 
     console.log("Player respawned!");
   }
 
-  updateCameraPosition() {
+  updateCameraPosition(): void {
     // Position camera at player's eye level
     const eyePosition = this.position.clone();
     eyePosition.y += 1.7;
@@ -305,7 +346,7 @@ export class Player {
     this.camera.rotation.set(this.rotation.x, this.rotation.y, 0);
   }
 
-  takeDamage(amount) {
+  takeDamage(amount: number): void {
     if (!this.isAlive) return;
 
     this.bodyTemperature -= amount;

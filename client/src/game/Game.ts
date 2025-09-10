@@ -1,11 +1,60 @@
 import * as THREE from "three";
-import { Player } from "./Player.js";
-import { World } from "./World.js";
-import { UI } from "./UI.js";
-import { NetworkManager } from "./NetworkManager.js";
+import { Player } from "./Player";
+import { World } from "./World";
+import { UI } from "./UI";
+import { NetworkManager } from "./NetworkManager";
+
+interface OtherPlayer {
+  mesh: THREE.Mesh;
+  nameTag: THREE.Mesh;
+  data: any;
+  color: number;
+}
+
+interface NetworkSnowball {
+  mesh: THREE.Mesh;
+  velocity: THREE.Vector3;
+  startTime: number;
+}
+
+interface KeysState {
+  [key: string]: boolean;
+}
+
+interface MouseState {
+  x: number;
+  y: number;
+}
+
+interface MoveInput {
+  forward: boolean;
+  backward: boolean;
+  left: boolean;
+  right: boolean;
+}
 
 export class Game {
-  constructor(container) {
+  public container: HTMLElement;
+  public scene: THREE.Scene;
+  public camera: THREE.PerspectiveCamera;
+  public renderer: THREE.WebGLRenderer;
+  public clock: THREE.Clock;
+  public isRunning: boolean = false;
+  public mouseLookEnabled: boolean = false;
+
+  // Game objects
+  public player: Player | null = null;
+  public world: World | null = null;
+  public ui: UI | null = null;
+  public networkManager: NetworkManager | null = null;
+  public otherPlayers: Map<string, OtherPlayer> = new Map();
+  public networkSnowballs: Map<string, NetworkSnowball> = new Map();
+
+  // Input handling
+  public keys: KeysState = {};
+  public mouse: MouseState = { x: 0, y: 0 };
+
+  constructor(container: HTMLElement) {
     this.container = container;
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(
@@ -15,27 +64,12 @@ export class Game {
       1000
     );
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-
     this.clock = new THREE.Clock();
-    this.isRunning = false;
-    this.mouseLookEnabled = false;
-
-    // Game objects
-    this.player = null;
-    this.world = null;
-    this.ui = null;
-    this.networkManager = null;
-    this.otherPlayers = new Map();
-    this.networkSnowballs = new Map();
-
-    // Input handling
-    this.keys = {};
-    this.mouse = { x: 0, y: 0 };
 
     this.init();
   }
 
-  init() {
+  init(): void {
     // Setup renderer
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setClearColor(0x87ceeb, 1);
@@ -63,13 +97,13 @@ export class Game {
     this.camera.position.y += 1.7; // Eye height
   }
 
-  setupLighting() {
-    // Ambient light for overall illumination
-    const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+  setupLighting(): void {
+    // Ambient light for overall illumination - brighter for snow scenes
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     this.scene.add(ambientLight);
 
-    // Directional light (sun)
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    // Directional light (sun) - stronger for bright snow reflection
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
     directionalLight.position.set(50, 100, 50);
     directionalLight.castShadow = true;
     directionalLight.shadow.mapSize.width = 2048;
@@ -83,24 +117,24 @@ export class Game {
     this.scene.add(directionalLight);
   }
 
-  setupInputHandlers() {
+  setupInputHandlers(): void {
     // Keyboard input
-    document.addEventListener("keydown", (event) => {
+    document.addEventListener("keydown", (event: KeyboardEvent) => {
       this.keys[event.code] = true;
 
       // Handle space for jumping
       if (event.code === "Space") {
         event.preventDefault();
-        this.player.jump();
+        this.player?.jump();
       }
     });
 
-    document.addEventListener("keyup", (event) => {
+    document.addEventListener("keyup", (event: KeyboardEvent) => {
       this.keys[event.code] = false;
     });
 
     // Mouse input
-    document.addEventListener("mousemove", (event) => {
+    document.addEventListener("mousemove", (event: MouseEvent) => {
       if (this.mouseLookEnabled) {
         this.mouse.x = event.movementX || 0;
         this.mouse.y = event.movementY || 0;
@@ -108,63 +142,96 @@ export class Game {
     });
 
     // Mouse click for snowball throwing
-    document.addEventListener("click", (event) => {
+    document.addEventListener("click", (event: MouseEvent) => {
       if (this.mouseLookEnabled) {
-        this.player.throwSnowball();
+        this.player?.throwSnowball();
       }
     });
   }
 
-  setupNetworkEvents() {
+  setupNetworkEvents(): void {
+    if (!this.networkManager) return;
+
     // Handle own player connection data
-    this.networkManager.on("playerConnected", (playerData) => {
+    this.networkManager.on("playerConnected", (playerData: any) => {
       console.log("Received own player data:", playerData);
-      this.ui.updatePlayerName(playerData.playerName);
+      this.ui?.updatePlayerName(playerData.playerName);
     });
 
     // Handle initial players list when connecting
-    this.networkManager.on("playersUpdate", (players) => {
+    this.networkManager.on("playersUpdate", (players: any[]) => {
       console.log("Received initial players list:", players);
       players.forEach((player) => {
-        if (player.playerId !== this.networkManager.playerId) {
+        if (player.playerId !== this.networkManager?.playerId) {
           this.createOtherPlayer(player);
         }
       });
     });
 
     // Handle other players joining
-    this.networkManager.on("playerJoined", (player) => {
+    this.networkManager.on("playerJoined", (player: any) => {
       console.log("Player joined event:", player);
       this.createOtherPlayer(player);
     });
 
     // Handle other players leaving
-    this.networkManager.on("playerLeft", (playerId) => {
+    this.networkManager.on("playerLeft", (playerId: string) => {
       this.removeOtherPlayer(playerId);
     });
 
     // Handle other players position updates
-    this.networkManager.on("playerPositionUpdate", ({ playerId, position }) => {
-      this.updateOtherPlayerPosition(playerId, position);
-    });
+    this.networkManager.on(
+      "playerPositionUpdate",
+      ({ playerId, position }: { playerId: string; position: any }) => {
+        this.updateOtherPlayerPosition(playerId, position);
+      }
+    );
 
     // Handle snowball throws from other players
-    this.networkManager.on("snowballThrown", (snowball) => {
+    this.networkManager.on("snowballThrown", (snowball: any) => {
       this.createNetworkSnowball(snowball);
     });
 
     // Handle snowball removal
-    this.networkManager.on("snowballRemoved", (snowballId) => {
+    this.networkManager.on("snowballRemoved", (snowballId: string) => {
       this.removeNetworkSnowball(snowballId);
     });
 
     // Handle player count updates
-    this.networkManager.on("playerCount", (count) => {
-      this.ui.updatePlayerCount(count);
+    this.networkManager.on("playerCount", (count: number) => {
+      this.ui?.updatePlayerCount(count);
     });
+
+    // Handle player name updates
+    this.networkManager.on(
+      "playerNameUpdate",
+      ({ playerId, playerName }: { playerId: string; playerName: string }) => {
+        console.log("Player name update event:", playerId, playerName);
+
+        // If this is our own player, update the UI
+        if (playerId === this.networkManager?.playerId) {
+          this.ui?.updatePlayerName(playerName);
+        }
+
+        // Update the name tag for other players
+        if (this.otherPlayers.has(playerId)) {
+          const player = this.otherPlayers.get(playerId)!;
+          player.data.playerName = playerName;
+
+          // Recreate the name tag with the new name
+          if (player.nameTag) {
+            player.mesh.remove(player.nameTag);
+            const newNameTag = this.createNameTag(playerName);
+            newNameTag.position.set(0, 3.2, 0);
+            player.mesh.add(newNameTag);
+            player.nameTag = newNameTag;
+          }
+        }
+      }
+    );
   }
 
-  createOtherPlayer(playerData) {
+  createOtherPlayer(playerData: any): void {
     if (this.otherPlayers.has(playerData.playerId)) return;
 
     // Generate a unique color for this player based on their ID
@@ -202,16 +269,16 @@ export class Game {
       "Name:",
       playerData.playerName,
       "Color:",
-      `#${playerColor.toString(16).padStart(6, '0')}`
+      `#${playerColor.toString(16).padStart(6, "0")}`
     );
   }
 
-  generatePlayerColor(playerId) {
+  generatePlayerColor(playerId: string): number {
     // Create a consistent color based on player ID
     let hash = 0;
     for (let i = 0; i < playerId.length; i++) {
       const char = playerId.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
 
@@ -221,23 +288,35 @@ export class Game {
     const lightness = 50 + (Math.abs(hash >> 16) % 20); // 50-70%
 
     // Convert HSL to RGB
-    const c = (1 - Math.abs(2 * lightness / 100 - 1)) * saturation / 100;
-    const x = c * (1 - Math.abs((hue / 60) % 2 - 1));
+    const c = ((1 - Math.abs((2 * lightness) / 100 - 1)) * saturation) / 100;
+    const x = c * (1 - Math.abs(((hue / 60) % 2) - 1));
     const m = lightness / 100 - c / 2;
 
-    let r, g, b;
+    let r: number, g: number, b: number;
     if (hue >= 0 && hue < 60) {
-      r = c; g = x; b = 0;
+      r = c;
+      g = x;
+      b = 0;
     } else if (hue >= 60 && hue < 120) {
-      r = x; g = c; b = 0;
+      r = x;
+      g = c;
+      b = 0;
     } else if (hue >= 120 && hue < 180) {
-      r = 0; g = c; b = x;
+      r = 0;
+      g = c;
+      b = x;
     } else if (hue >= 180 && hue < 240) {
-      r = 0; g = x; b = c;
+      r = 0;
+      g = x;
+      b = c;
     } else if (hue >= 240 && hue < 300) {
-      r = x; g = 0; b = c;
+      r = x;
+      g = 0;
+      b = c;
     } else {
-      r = c; g = 0; b = x;
+      r = c;
+      g = 0;
+      b = x;
     }
 
     // Convert to 0-255 range and then to hex color
@@ -248,10 +327,10 @@ export class Game {
     return (r << 16) | (g << 8) | b;
   }
 
-  createNameTag(playerName) {
+  createNameTag(playerName: string): THREE.Mesh {
     // Create canvas for text rendering
     const canvas = document.createElement("canvas");
-    const context = canvas.getContext("2d");
+    const context = canvas.getContext("2d")!;
 
     // Set canvas size
     canvas.width = 256;
@@ -286,9 +365,9 @@ export class Game {
     return nameTag;
   }
 
-  removeOtherPlayer(playerId) {
+  removeOtherPlayer(playerId: string): void {
     if (this.otherPlayers.has(playerId)) {
-      const player = this.otherPlayers.get(playerId);
+      const player = this.otherPlayers.get(playerId)!;
       this.scene.remove(player.mesh);
       // Name tag will be removed automatically since it's attached to the mesh
       this.otherPlayers.delete(playerId);
@@ -296,9 +375,9 @@ export class Game {
     }
   }
 
-  updateOtherPlayerPosition(playerId, position) {
+  updateOtherPlayerPosition(playerId: string, position: any): void {
     if (this.otherPlayers.has(playerId)) {
-      const player = this.otherPlayers.get(playerId);
+      const player = this.otherPlayers.get(playerId)!;
       player.mesh.position.set(
         position.position.x,
         position.position.y,
@@ -312,11 +391,13 @@ export class Game {
     }
   }
 
-  createNetworkSnowball(snowballData) {
-    if (snowballData.playerId === this.networkManager.playerId) return; // Skip own snowballs
+  createNetworkSnowball(snowballData: any): void {
+    if (snowballData.playerId === this.networkManager?.playerId) return; // Skip own snowballs
 
     const geometry = new THREE.SphereGeometry(0.1, 8, 6);
-    const material = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    const material = new THREE.MeshLambertMaterial({
+      color: 0xffffff,
+    });
     const mesh = new THREE.Mesh(geometry, material);
 
     mesh.position.set(
@@ -341,15 +422,17 @@ export class Game {
     console.log("Created network snowball:", snowballData.snowballId);
   }
 
-  removeNetworkSnowball(snowballId) {
+  removeNetworkSnowball(snowballId: string): void {
     if (this.networkSnowballs.has(snowballId)) {
-      const snowball = this.networkSnowballs.get(snowballId);
+      const snowball = this.networkSnowballs.get(snowballId)!;
       this.scene.remove(snowball.mesh);
       this.networkSnowballs.delete(snowballId);
     }
   }
 
-  async connectToServer() {
+  async connectToServer(): Promise<boolean> {
+    if (!this.networkManager) return false;
+
     const connected = await this.networkManager.connect();
     if (connected) {
       console.log("Connected to game server!");
@@ -358,7 +441,7 @@ export class Game {
       return true;
     } else {
       console.error("Failed to connect to game server");
-      this.ui.showMessage(
+      this.ui?.showMessage(
         "Failed to connect to server. Playing offline.",
         5000
       );
@@ -366,17 +449,17 @@ export class Game {
     }
   }
 
-  enableMouseLook() {
+  enableMouseLook(): void {
     this.mouseLookEnabled = true;
   }
 
-  disableMouseLook() {
+  disableMouseLook(): void {
     this.mouseLookEnabled = false;
     this.mouse.x = 0;
     this.mouse.y = 0;
   }
 
-  async start() {
+  async start(): Promise<void> {
     this.isRunning = true;
 
     // Connect to server
@@ -385,11 +468,11 @@ export class Game {
     this.gameLoop();
   }
 
-  stop() {
+  stop(): void {
     this.isRunning = false;
   }
 
-  gameLoop() {
+  gameLoop(): void {
     if (!this.isRunning) return;
 
     requestAnimationFrame(() => this.gameLoop());
@@ -403,9 +486,11 @@ export class Game {
     this.renderer.render(this.scene, this.camera);
   }
 
-  update(deltaTime) {
+  update(deltaTime: number): void {
+    if (!this.player) return;
+
     // Handle player input
-    const moveInput = {
+    const moveInput: MoveInput = {
       forward: this.keys["KeyW"] || false,
       backward: this.keys["KeyS"] || false,
       left: this.keys["KeyA"] || false,
@@ -460,17 +545,17 @@ export class Game {
     this.updateNameTags();
 
     // Update world
-    this.world.update(deltaTime);
+    this.world?.update(deltaTime);
 
     // Update UI
-    this.ui.update(this.player);
+    this.ui?.update(this.player);
 
     // Reset mouse movement
     this.mouse.x = 0;
     this.mouse.y = 0;
   }
 
-  updateNameTags() {
+  updateNameTags(): void {
     // Make name tags always face the camera
     this.otherPlayers.forEach((player) => {
       if (player.nameTag) {
@@ -479,7 +564,7 @@ export class Game {
     });
   }
 
-  updateNetworkSnowballs(deltaTime) {
+  updateNetworkSnowballs(deltaTime: number): void {
     for (const [snowballId, snowball] of this.networkSnowballs.entries()) {
       // Update snowball position based on velocity
       snowball.mesh.position.add(
@@ -499,7 +584,7 @@ export class Game {
     }
   }
 
-  onWindowResize() {
+  onWindowResize(): void {
     this.camera.aspect = window.innerWidth / window.innerHeight;
     this.camera.updateProjectionMatrix();
     this.renderer.setSize(window.innerWidth, window.innerHeight);
