@@ -6,11 +6,11 @@ services:
     build:
       context: ./client
     environment:
-      API_URL: http://api:8080
+      API_URL: http://server:8080
     ports:
       - 3000:3000
 
-  api:
+  server:
     build:
       context: ./backend
     ports:
