@@ -127,29 +127,4 @@ The frontend end/client should be in client folder. Start by making the app show
 
 ---
 
-## 10. Docker Frontend for Production
-
-**Prompt:**
-
-- "The frontend needs a docker file to host build and serve it in nginx. u fix?"
-
-**Solution:**
-
-- Created a multi-stage Dockerfile for Vite build + Nginx serve.
-- Added `nginx.conf`, `.dockerignore`, and `docker-compose.yml` for easy deployment.
-
----
-
-## 11. Agent Log
-
-**Prompt:**
-
-- "Can you make an agent-log.md outlining my prompts and how you solved this? From the beginning."
-
-**Solution:**
-
-- Created this log summarizing all major requests and solutions.
-
----
-
 **End of log.**
