@@ -9,6 +9,8 @@ Frostbite is a 3D online multiplayer snowball fighting game. Players can walk ar
 - Respawn mechanics
 - Dockerized frontend for production
 
+> **Disclaimer:** The Frostbite name used in this project is in no way affiliated with or endorsed by the Frostbite game engine or Electronic Arts. This project is an independent creation and has no association with Electronic Arts or its products.
+
 ## Getting Started (Local Development)
 
 ### Prerequisites
@@ -19,19 +21,19 @@ Frostbite is a 3D online multiplayer snowball fighting game. Players can walk ar
 
 ---
 
-## 1. Backend (SignalR Server)
+## 1. Backend (ASP.NET Core server with SignalR Hub)
 
 ```
-cd backend/FrostbiteServer
+cd backend
 # Restore dependencies
- dotnet restore
+dotnet restore
 # Run the server (default port: 5286)
- dotnet run
+dotnet run
 ```
 
 The backend will start and listen for SignalR connections at:
 
-- http://localhost:5286/gamehub
+- http://localhost:5286/hub
 
 ---
 
@@ -40,27 +42,16 @@ The backend will start and listen for SignalR connections at:
 ```
 cd client
 # Install dependencies
-npm install
+yarn
 # Start the dev server (default: http://localhost:3000 or 3001)
-npm run dev
+yarn dev
 ```
 
 Open your browser at the printed local address. Open multiple tabs/windows to test multiplayer.
 
 ---
 
-## 3. Production Frontend (Docker + Nginx)
-
-```
-cd client
-# Build and run with Docker Compose
-# (Serves frontend at http://localhost:3000)
-docker-compose up -d --build
-```
-
----
-
-## 4. Game Controls
+## 3. Game Controls
 
 - **WASD**: Move
 - **Mouse**: Look around
@@ -69,14 +60,14 @@ docker-compose up -d --build
 
 ---
 
-## 5. Project Structure
+## 4. Project Structure
 
 - `client/` — Frontend (Three.js, Vite, Docker, Nginx)
-- `backend/FrostbiteServer/` — Backend (ASP.NET Core, SignalR)
+- `backend/` — Backend (ASP.NET Core, SignalR)
 
 ---
 
-## 6. Notes
+## 5. Notes
 
 - Player count and gamer tags update in real time
 - Each player gets a unique color and name

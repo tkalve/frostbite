@@ -2,10 +2,6 @@ using FrostbiteServer.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
 // Add SignalR
 builder.Services.AddSignalR();
 
@@ -33,17 +29,15 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
 }
 
 // Apply CORS policy
 app.UseCors("FrostbiteCorsPolicy");
 
 // Map SignalR hub
-app.MapHub<GameHub>("/gamehub");
+app.MapHub<GameHub>("/hub");
 
 Console.WriteLine("Frostbite Server starting...");
-Console.WriteLine("SignalR Hub available at: /gamehub");
+Console.WriteLine("SignalR Hub available at: /hub");
 
 app.Run();

@@ -1,0 +1,18 @@
+name: frostbite
+
+services:
+
+  client:
+    build:
+      context: ./client
+    environment:
+      API_URL: http://api:8080
+    ports:
+      - 3000:3000
+
+  api:
+    build:
+      context: ./backend
+    ports:
+      - 8000:8080
+

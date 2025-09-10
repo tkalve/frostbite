@@ -115,14 +115,17 @@ export class Player {
       this.snowballCooldown -= deltaTime;
     }
 
-    // Simulate temperature loss over time (gameplay mechanic) - DISABLED FOR DEV
-    // this.bodyTemperature -= deltaTime * 0.1;
-    // this.health = Math.max(0, (this.bodyTemperature - 32) * (100 / 5)); // 32°C = 0 health, 37°C = 100 health
+    // Simulate temperature loss over time (gameplay mechanic)
+    // Disable by setting VITE_APP_HYPOTHERMIA=false in .env
+    if (import.meta.env.VITE_APP_HYPOTHERMIA !== "false") {
+      this.bodyTemperature -= deltaTime * 0.1;
+      this.health = Math.max(0, (this.bodyTemperature - 32) * (100 / 5)); // 32°C = 0 health, 37°C = 100 health
 
-    // Check if player is "frozen out"
-    // if (this.health <= 0 && this.isAlive) {
-    //   this.freeze();
-    // }
+      // Check if player is "frozen out"
+      if (this.health <= 0 && this.isAlive) {
+        this.freeze();
+      }
+    }
   }
 
   handleMovement(deltaTime, moveInput) {
