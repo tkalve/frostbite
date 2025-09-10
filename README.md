@@ -9,6 +9,8 @@ Frostbite is a 3D online multiplayer snowball fighting game. Players can walk ar
 - Respawn mechanics
 - Dockerized client and server for production
 
+![Frostbite gameplay screenshot](screenshot.png)
+
 First version built in a couple of hours during a vibe coding session, have a look at the [agent log](agent-log.md).
 
 > **Disclaimer:** The Frostbite name used in this project is in no way affiliated with or endorsed by the Frostbite game engine or Electronic Arts. This project is an independent creation and has no association with Electronic Arts or its products.
