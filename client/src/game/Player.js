@@ -71,14 +71,20 @@ export class Player {
 
     // Handle mouse look
     if (mouseInput.x !== 0 || mouseInput.y !== 0) {
+      // Only apply horizontal rotation (yaw) to player rotation
       this.rotation.y -= mouseInput.x * this.mouseSensitivity;
+
+      // Apply vertical rotation (pitch) directly to camera
       this.rotation.x -= mouseInput.y * this.mouseSensitivity;
 
-      // Clamp vertical rotation
+      // Clamp vertical rotation to prevent over-rotation
       this.rotation.x = Math.max(
         -Math.PI / 2,
         Math.min(Math.PI / 2, this.rotation.x)
       );
+
+      // Keep roll at zero to prevent leaning
+      this.rotation.z = 0;
     }
 
     // Handle movement
@@ -292,7 +298,11 @@ export class Player {
     eyePosition.y += 1.7;
 
     this.camera.position.copy(eyePosition);
-    this.camera.rotation.copy(this.rotation);
+
+    // Apply rotations separately for proper FPS camera
+    // Only apply yaw (Y) and pitch (X), no roll (Z)
+    this.camera.rotation.order = "YXZ"; // Set rotation order
+    this.camera.rotation.set(this.rotation.x, this.rotation.y, 0);
   }
 
   takeDamage(amount) {
