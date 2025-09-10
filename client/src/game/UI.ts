@@ -1,4 +1,13 @@
+import { Player } from "./Player.js";
+
 export class UI {
+  public temperatureElement: HTMLElement | null;
+  public playerCountElement: HTMLElement | null;
+  public healthFillElement: HTMLElement | null;
+  public respawnScreenElement: HTMLElement | null;
+  public respawnTimerElement: HTMLElement | null;
+  public playerNameElement: HTMLElement | null;
+
   constructor() {
     this.temperatureElement = document.getElementById("temperature");
     this.playerCountElement = document.getElementById("playerCount");
@@ -8,7 +17,7 @@ export class UI {
     this.playerNameElement = document.getElementById("playerName");
   }
 
-  update(player) {
+  update(player: Player): void {
     // Update temperature display
     if (this.temperatureElement) {
       this.temperatureElement.textContent = `${player.bodyTemperature.toFixed(
@@ -32,35 +41,36 @@ export class UI {
     }
   }
 
-  updatePlayerName(playerName) {
+  updatePlayerName(playerName: string): void {
     if (this.playerNameElement) {
       this.playerNameElement.textContent = playerName;
     }
   }
 
-  updatePlayerCount(count) {
+  updatePlayerCount(count: number): void {
     if (this.playerCountElement) {
       this.playerCountElement.textContent = count.toString();
     }
   }
 
-  showRespawnScreen(timeRemaining) {
+  showRespawnScreen(timeRemaining: number): void {
     if (this.respawnScreenElement) {
       this.respawnScreenElement.style.display = "flex";
     }
 
     if (this.respawnTimerElement) {
-      this.respawnTimerElement.textContent = Math.ceil(timeRemaining);
+      this.respawnTimerElement.textContent =
+        Math.ceil(timeRemaining).toString();
     }
   }
 
-  hideRespawnScreen() {
+  hideRespawnScreen(): void {
     if (this.respawnScreenElement) {
       this.respawnScreenElement.style.display = "none";
     }
   }
 
-  showMessage(message, duration = 3000) {
+  showMessage(message: string, duration: number = 3000): void {
     // Create a temporary message element
     const messageElement = document.createElement("div");
     messageElement.style.cssText = `

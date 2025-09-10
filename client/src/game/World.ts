@@ -1,28 +1,29 @@
 import * as THREE from "three";
 
 export class World {
-  constructor(scene) {
-    this.scene = scene;
-    this.terrain = null;
-    this.trees = [];
-    this.obstacles = [];
+  public scene: THREE.Scene;
+  public terrain: THREE.Mesh | null = null;
+  public trees: THREE.Group[] = [];
+  public obstacles: (THREE.Mesh | THREE.Group)[] = [];
 
+  constructor(scene: THREE.Scene) {
+    this.scene = scene;
     this.init();
   }
 
-  init() {
+  init(): void {
     this.createTerrain();
     this.createTrees();
     this.createObstacles();
     this.createSkybox();
   }
 
-  createTerrain() {
+  createTerrain(): void {
     // Create a snowy ground plane
     const groundGeometry = new THREE.PlaneGeometry(200, 200, 50, 50);
 
     // Add some height variation for a more interesting terrain
-    const vertices = groundGeometry.attributes.position.array;
+    const vertices = groundGeometry.attributes.position.array as Float32Array;
     for (let i = 0; i < vertices.length; i += 3) {
       // Add some random height variation
       vertices[i + 2] =
@@ -33,8 +34,7 @@ export class World {
 
     const groundMaterial = new THREE.MeshLambertMaterial({
       color: 0xffffff,
-      transparent: true,
-      opacity: 0.9,
+      reflectivity: 0.9,
     });
 
     this.terrain = new THREE.Mesh(groundGeometry, groundMaterial);
@@ -46,7 +46,7 @@ export class World {
     this.addSnowPatches();
   }
 
-  addSnowPatches() {
+  addSnowPatches(): void {
     // Create random snow mounds/patches
     for (let i = 0; i < 20; i++) {
       const patchGeometry = new THREE.SphereGeometry(
@@ -59,7 +59,10 @@ export class World {
         Math.PI / 2
       );
 
-      const patchMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
+      const patchMaterial = new THREE.MeshLambertMaterial({
+        color: 0xffffff,
+        reflectivity: 2,
+      });
       const patch = new THREE.Mesh(patchGeometry, patchMaterial);
 
       patch.position.set(
@@ -77,9 +80,9 @@ export class World {
   createTrees() {
     // Create a variety of tree types scattered around
     for (let i = 0; i < 35; i++) {
-      let tree;
-      const treeTypeRandom = Math.random();
-      
+      let tree: THREE.Group;
+      const treeTypeRandom: number = Math.random();
+
       // Create different tree types for variety
       if (treeTypeRandom < 0.6) {
         tree = this.createTree(); // Enhanced pine tree
@@ -90,15 +93,16 @@ export class World {
       }
 
       // Random position with some clustering for natural forest look
-      const clusterCenter = {
-        x: (Math.random() - 0.5) * 160,
-        z: (Math.random() - 0.5) * 160
-      };
-      
+      //   const clusterCenter: { x: number; z: number } = {
+      //     x: (Math.random() - 0.5) * 160,
+      //     z: (Math.random() - 0.5) * 160,
+      //   };
+
       // Add some clustering by positioning trees near cluster centers sometimes
-      const useCluster = Math.random() > 0.7;
+      const useCluster: boolean = Math.random() > 0.7;
       if (useCluster && this.trees.length > 0) {
-        const existingTree = this.trees[Math.floor(Math.random() * this.trees.length)];
+        const existingTree: THREE.Group =
+          this.trees[Math.floor(Math.random() * this.trees.length)];
         tree.position.set(
           existingTree.position.x + (Math.random() - 0.5) * 15,
           0,
@@ -120,44 +124,45 @@ export class World {
     }
   }
 
-  createFirTree() {
+  createFirTree(): THREE.Group {
     const treeGroup = new THREE.Group();
-    
+
     // Taller, narrower tree
-    const heightVariation = 1.0 + Math.random() * 0.8; // 1.0 to 1.8
-    const widthVariation = 0.6 + Math.random() * 0.3; // Narrower than regular trees
+    const heightVariation: number = 1.0 + Math.random() * 0.8; // 1.0 to 1.8
+    const widthVariation: number = 0.6 + Math.random() * 0.3; // Narrower than regular trees
 
     // Fir trunk - taller and thinner with organic shape
-    const trunkHeight = 4 * heightVariation;
+    const trunkHeight: number = 4 * heightVariation;
     const trunkGeometry = new THREE.CylinderGeometry(
       0.2 + Math.random() * 0.05,
       0.3 + Math.random() * 0.1,
-      trunkHeight, 
+      trunkHeight,
       16, // more segments
-      6   // height segments
+      6 // height segments
     );
-    
+
     // Add organic trunk deformation
-    const trunkVertices = trunkGeometry.attributes.position.array;
+    const trunkVertices = trunkGeometry.attributes.position
+      .array as Float32Array;
     for (let i = 0; i < trunkVertices.length; i += 3) {
-      const x = trunkVertices[i];
-      const z = trunkVertices[i + 2];
-      const y = trunkVertices[i + 1];
-      const distance = Math.sqrt(x * x + z * z);
-      
-      const bark1 = Math.sin(y * 5 + x * 3) * 0.015;
-      const bark2 = Math.cos(y * 7 + z * 4) * 0.01;
-      const totalNoise = (bark1 + bark2) * distance;
-      
+      const x: number = trunkVertices[i];
+      const z: number = trunkVertices[i + 2];
+      const y: number = trunkVertices[i + 1];
+      const distance: number = Math.sqrt(x * x + z * z);
+
+      const bark1: number = Math.sin(y * 5 + x * 3) * 0.015;
+      const bark2: number = Math.cos(y * 7 + z * 4) * 0.01;
+      const totalNoise: number = (bark1 + bark2) * distance;
+
       trunkVertices[i] += totalNoise;
       trunkVertices[i + 2] += totalNoise;
     }
     trunkGeometry.attributes.position.needsUpdate = true;
     trunkGeometry.computeVertexNormals();
-    
+
     const barkColors = [0x3d2f1f, 0x4a3c28, 0x5d4e3a];
-    const trunkMaterial = new THREE.MeshLambertMaterial({ 
-      color: barkColors[Math.floor(Math.random() * barkColors.length)]
+    const trunkMaterial = new THREE.MeshLambertMaterial({
+      color: barkColors[Math.floor(Math.random() * barkColors.length)],
     });
     const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
     trunk.position.y = trunkHeight / 2;
@@ -170,42 +175,43 @@ export class World {
       0x1e5631, // Deep green
       0x2d5a3d, // Dark green
       0x0d3b21, // Forest green
-      0x164a28  // Pine green
+      0x164a28, // Pine green
     ];
 
     // Create organic foliage clusters for fir tree
     const numClusters = 12 + Math.floor(Math.random() * 8);
     for (let cluster = 0; cluster < numClusters; cluster++) {
       const heightRatio = cluster / numClusters;
-      const clusterHeight = trunkHeight + 0.3 + (heightRatio * 4 * heightVariation);
-      
+      const clusterHeight =
+        trunkHeight + 0.3 + heightRatio * 4 * heightVariation;
+
       // Very narrow profile for fir
       const maxRadius = (1.2 - heightRatio * 0.9) * widthVariation;
       const clusterRadius = maxRadius * (0.6 + Math.random() * 0.4);
-      
+
       // Position clusters in a spiral pattern for natural look
-      const angle = (cluster * 2.4) + Math.random() * 1.2;
+      const angle = cluster * 2.4 + Math.random() * 1.2;
       const radiusOffset = Math.random() * maxRadius * 0.3;
-      
+
       const clusterX = Math.cos(angle) * radiusOffset;
       const clusterZ = Math.sin(angle) * radiusOffset;
-      
+
       // Create elongated cluster for fir needle appearance
       const foliageGeometry = new THREE.SphereGeometry(clusterRadius, 10, 6);
-      
+
       // Deform to be more needle-like and droopy
       const vertices = foliageGeometry.attributes.position.array;
       for (let i = 0; i < vertices.length; i += 3) {
         const x = vertices[i];
         const y = vertices[i + 1];
         const z = vertices[i + 2];
-        
+
         // Make clusters more elongated and droopy
         const noise = Math.sin(x * 4) * Math.cos(z * 4) * 0.2;
         vertices[i + 1] *= 0.6; // Flatten vertically
         vertices[i] += noise;
         vertices[i + 2] += noise;
-        
+
         // Add droop effect
         if (y < 0) {
           vertices[i + 1] *= 1.3; // Extend downward
@@ -213,12 +219,12 @@ export class World {
       }
       foliageGeometry.attributes.position.needsUpdate = true;
       foliageGeometry.computeVertexNormals();
-      
+
       const colorIndex = Math.floor(Math.random() * darkGreenShades.length);
-      const foliageMaterial = new THREE.MeshLambertMaterial({ 
-        color: darkGreenShades[colorIndex]
+      const foliageMaterial = new THREE.MeshLambertMaterial({
+        color: darkGreenShades[colorIndex],
       });
-      
+
       const foliage = new THREE.Mesh(foliageGeometry, foliageMaterial);
       foliage.position.set(clusterX, clusterHeight, clusterZ);
       foliage.rotation.set(
@@ -235,44 +241,45 @@ export class World {
     return treeGroup;
   }
 
-  createSpruceTree() {
+  createSpruceTree(): THREE.Group {
     const treeGroup = new THREE.Group();
-    
+
     // Wider, fuller tree
-    const heightVariation = 0.8 + Math.random() * 0.4; // 0.8 to 1.2
-    const widthVariation = 1.2 + Math.random() * 0.4; // Wider than regular trees
+    const heightVariation: number = 0.8 + Math.random() * 0.4; // 0.8 to 1.2
+    const widthVariation: number = 1.2 + Math.random() * 0.4; // Wider than regular trees
 
     // Spruce trunk - shorter and thicker with organic deformation
-    const trunkHeight = 2.5 * heightVariation;
+    const trunkHeight: number = 2.5 * heightVariation;
     const trunkGeometry = new THREE.CylinderGeometry(
       0.35 + Math.random() * 0.1,
       0.5 + Math.random() * 0.15,
-      trunkHeight, 
+      trunkHeight,
       16, // more segments
-      6   // height segments
+      6 // height segments
     );
-    
+
     // Add organic trunk shape
-    const trunkVertices = trunkGeometry.attributes.position.array;
+    const trunkVertices = trunkGeometry.attributes.position
+      .array as Float32Array;
     for (let i = 0; i < trunkVertices.length; i += 3) {
-      const x = trunkVertices[i];
-      const z = trunkVertices[i + 2];
-      const y = trunkVertices[i + 1];
-      const distance = Math.sqrt(x * x + z * z);
-      
-      const bark1 = Math.sin(y * 3 + x * 2) * 0.025;
-      const bark2 = Math.cos(y * 6 + z * 3) * 0.02;
-      const totalNoise = (bark1 + bark2) * distance;
-      
+      const x: number = trunkVertices[i];
+      const z: number = trunkVertices[i + 2];
+      const y: number = trunkVertices[i + 1];
+      const distance: number = Math.sqrt(x * x + z * z);
+
+      const bark1: number = Math.sin(y * 3 + x * 2) * 0.025;
+      const bark2: number = Math.cos(y * 6 + z * 3) * 0.02;
+      const totalNoise: number = (bark1 + bark2) * distance;
+
       trunkVertices[i] += totalNoise;
       trunkVertices[i + 2] += totalNoise;
     }
     trunkGeometry.attributes.position.needsUpdate = true;
     trunkGeometry.computeVertexNormals();
-    
+
     const barkColors = [0x4a3c28, 0x6b5b4f, 0x8b7355];
-    const trunkMaterial = new THREE.MeshLambertMaterial({ 
-      color: barkColors[Math.floor(Math.random() * barkColors.length)]
+    const trunkMaterial = new THREE.MeshLambertMaterial({
+      color: barkColors[Math.floor(Math.random() * barkColors.length)],
     });
     const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
     trunk.position.y = trunkHeight / 2;
@@ -287,40 +294,42 @@ export class World {
       0x87a96b, // Sage green
       0x8fbc8f, // Dark sea green
       0x6b8e23, // Olive drab
-      0x9acd32  // Yellow green
+      0x9acd32, // Yellow green
     ];
 
     // Create full, bushy foliage with many organic clusters
     const numClusters = 16 + Math.floor(Math.random() * 8);
     for (let cluster = 0; cluster < numClusters; cluster++) {
       const heightRatio = cluster / numClusters;
-      const clusterHeight = trunkHeight + 0.4 + (heightRatio * 2.5 * heightVariation);
-      
+      const clusterHeight =
+        trunkHeight + 0.4 + heightRatio * 2.5 * heightVariation;
+
       // Wide profile for spruce
       const maxRadius = (2.5 - heightRatio * 1.2) * widthVariation;
       const clusterRadius = maxRadius * (0.7 + Math.random() * 0.5);
-      
+
       // Distribute clusters more randomly for fuller look
       const angle = Math.random() * Math.PI * 2;
       const radiusOffset = Math.random() * maxRadius * 0.6;
-      
+
       const clusterX = Math.cos(angle) * radiusOffset;
       const clusterZ = Math.sin(angle) * radiusOffset;
-      
+
       // Create full, rounded clusters for spruce
       const foliageGeometry = new THREE.SphereGeometry(clusterRadius, 12, 8);
-      
+
       // Add organic variation but keep it fuller
       const vertices = foliageGeometry.attributes.position.array;
       for (let i = 0; i < vertices.length; i += 3) {
         const x = vertices[i];
         const y = vertices[i + 1];
         const z = vertices[i + 2];
-        
+
         // Gentle organic variation
-        const noise1 = Math.sin(x * 2.5) * Math.cos(y * 3) * Math.sin(z * 2.5) * 0.2;
+        const noise1 =
+          Math.sin(x * 2.5) * Math.cos(y * 3) * Math.sin(z * 2.5) * 0.2;
         const noise2 = Math.cos(x * 5 + y * 4) * 0.1;
-        
+
         const scale = 1 + noise1 + noise2;
         vertices[i] *= scale;
         vertices[i + 1] *= scale * 0.9; // Slightly flatten
@@ -328,30 +337,30 @@ export class World {
       }
       foliageGeometry.attributes.position.needsUpdate = true;
       foliageGeometry.computeVertexNormals();
-      
+
       const colorIndex = Math.floor(Math.random() * lightGreenShades.length);
-      const foliageMaterial = new THREE.MeshLambertMaterial({ 
-        color: lightGreenShades[colorIndex]
+      const foliageMaterial = new THREE.MeshLambertMaterial({
+        color: lightGreenShades[colorIndex],
       });
-      
+
       const foliage = new THREE.Mesh(foliageGeometry, foliageMaterial);
       foliage.position.set(clusterX, clusterHeight, clusterZ);
-      
+
       // Add natural rotation and scale variation
       foliage.rotation.set(
         Math.random() * 0.4 - 0.2,
         Math.random() * Math.PI * 2,
         Math.random() * 0.4 - 0.2
       );
-      
+
       const scaleVariation = 0.8 + Math.random() * 0.4;
       foliage.scale.set(scaleVariation, scaleVariation, scaleVariation);
-      
+
       // Add slight droop to lower branches for realism
       if (heightRatio < 0.4) {
         foliage.rotation.x += Math.random() * 0.3;
       }
-      
+
       foliage.castShadow = true;
       foliage.receiveShadow = true;
       treeGroup.add(foliage);
@@ -363,7 +372,7 @@ export class World {
 
   createTree() {
     const treeGroup = new THREE.Group();
-    
+
     // Randomization factors for tree variety
     const heightVariation = 0.7 + Math.random() * 0.6; // 0.7 to 1.3
     const widthVariation = 0.8 + Math.random() * 0.4; // 0.8 to 1.2
@@ -373,11 +382,11 @@ export class World {
     const trunkGeometry = new THREE.CylinderGeometry(
       0.25 + Math.random() * 0.1, // top radius variation
       0.35 + Math.random() * 0.15, // bottom radius variation
-      trunkHeight, 
+      trunkHeight,
       16, // more segments for smoother curves
-      8   // height segments for better deformation
+      8 // height segments for better deformation
     );
-    
+
     // Create more organic trunk shape with multiple noise functions
     const trunkVertices = trunkGeometry.attributes.position.array;
     for (let i = 0; i < trunkVertices.length; i += 3) {
@@ -385,13 +394,13 @@ export class World {
       const z = trunkVertices[i + 2];
       const y = trunkVertices[i + 1];
       const distance = Math.sqrt(x * x + z * z);
-      
+
       // Multiple layers of noise for more realistic bark texture
       const bark1 = Math.sin(y * 4 + x * 2) * 0.02;
       const bark2 = Math.cos(y * 8 + z * 3) * 0.015;
       const bark3 = Math.sin(y * 2 + x * z) * 0.01;
       const growthPattern = Math.sin(Math.atan2(z, x) * 3 + y * 0.5) * 0.025;
-      
+
       const totalNoise = (bark1 + bark2 + bark3 + growthPattern) * distance;
       trunkVertices[i] += totalNoise;
       trunkVertices[i + 2] += totalNoise;
@@ -401,8 +410,8 @@ export class World {
 
     // Enhanced bark material with realistic brown variations
     const barkColors = [0x4a3c28, 0x5d4e3a, 0x6b5b4f, 0x8b7355, 0x3d2f1f];
-    const trunkMaterial = new THREE.MeshLambertMaterial({ 
-      color: barkColors[Math.floor(Math.random() * barkColors.length)]
+    const trunkMaterial = new THREE.MeshLambertMaterial({
+      color: barkColors[Math.floor(Math.random() * barkColors.length)],
     });
     const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
     trunk.position.y = trunkHeight / 2;
@@ -412,41 +421,42 @@ export class World {
     // Create more realistic foliage using spherical shapes instead of cones
     const greenShades = [
       0x0f5132, // Dark forest green
-      0x228b22, // Forest green  
+      0x228b22, // Forest green
       0x2e8b57, // Sea green
       0x006400, // Dark green
       0x355e3b, // Hunter green
       0x4f7942, // Fern green
       0x87a96b, // Sage green
-      0x556b2f  // Dark olive green
+      0x556b2f, // Dark olive green
     ];
 
     // Create organic foliage clusters instead of geometric layers
     const numClusters = 8 + Math.floor(Math.random() * 6); // 8-14 clusters
-    
+
     for (let cluster = 0; cluster < numClusters; cluster++) {
       // Position clusters in a natural pine tree shape
       const heightRatio = cluster / numClusters;
-      const clusterHeight = trunkHeight + 0.5 + (heightRatio * 3.5 * heightVariation);
-      
+      const clusterHeight =
+        trunkHeight + 0.5 + heightRatio * 3.5 * heightVariation;
+
       // Radius gets smaller towards the top
       const maxRadius = (2.2 - heightRatio * 1.5) * widthVariation;
       const clusterRadius = maxRadius * (0.7 + Math.random() * 0.6);
-      
+
       // Random position around the tree for natural clustering
       const angle = Math.random() * Math.PI * 2;
       const radiusOffset = Math.random() * maxRadius * 0.4;
-      
+
       const clusterX = Math.cos(angle) * radiusOffset;
       const clusterZ = Math.sin(angle) * radiusOffset;
-      
+
       // Create organic foliage cluster using deformed sphere
       const foliageGeometry = new THREE.SphereGeometry(
         clusterRadius,
         12, // phi segments
-        8   // theta segments
+        8 // theta segments
       );
-      
+
       // Deform sphere to look more like natural foliage
       const vertices = foliageGeometry.attributes.position.array;
       for (let i = 0; i < vertices.length; i += 3) {
@@ -454,51 +464,57 @@ export class World {
         const y = vertices[i + 1];
         const z = vertices[i + 2];
         const radius = Math.sqrt(x * x + y * y + z * z);
-        
+
         // Create irregular, organic surface
-        const noise1 = Math.sin(x * 3) * Math.cos(y * 4) * Math.sin(z * 3.5) * 0.3;
+        const noise1 =
+          Math.sin(x * 3) * Math.cos(y * 4) * Math.sin(z * 3.5) * 0.3;
         const noise2 = Math.sin(x * 8 + y * 6) * 0.15;
         const noise3 = Math.cos(y * 5 + z * 4) * 0.2;
         const totalNoise = noise1 + noise2 + noise3;
-        
+
         // Make it more flattened (less round) and irregular
         const flatteningFactor = Math.abs(y) / radius;
         const scale = 1 + totalNoise - flatteningFactor * 0.3;
-        
+
         vertices[i] *= scale;
         vertices[i + 1] *= scale * 0.8; // Flatten vertically
         vertices[i + 2] *= scale;
       }
-      
+
       foliageGeometry.attributes.position.needsUpdate = true;
       foliageGeometry.computeVertexNormals();
 
       // Choose natural green color with some variation
       const colorIndex = Math.floor(Math.random() * greenShades.length);
-      const foliageMaterial = new THREE.MeshLambertMaterial({ 
-        color: greenShades[colorIndex]
+      const foliageMaterial = new THREE.MeshLambertMaterial({
+        color: greenShades[colorIndex],
       });
-      
+
       const foliage = new THREE.Mesh(foliageGeometry, foliageMaterial);
       foliage.position.set(clusterX, clusterHeight, clusterZ);
-      
+
       // Add natural rotation and slight scale variation
       foliage.rotation.set(
         Math.random() * 0.4 - 0.2,
         Math.random() * Math.PI * 2,
         Math.random() * 0.4 - 0.2
       );
-      
+
       const scaleVariation = 0.8 + Math.random() * 0.4;
       foliage.scale.set(scaleVariation, scaleVariation * 0.9, scaleVariation);
-      
+
       foliage.castShadow = true;
       foliage.receiveShadow = true;
       treeGroup.add(foliage);
     }
 
     // Add some needle-like details for pine tree realism
-    this.addPineNeedleDetails(treeGroup, trunkHeight, heightVariation, greenShades);
+    this.addPineNeedleDetails(
+      treeGroup,
+      trunkHeight,
+      heightVariation,
+      greenShades
+    );
 
     // Enhanced snow accumulation based on tree structure
     this.addRealisticSnow(treeGroup, numClusters, trunkHeight, widthVariation);
@@ -509,15 +525,22 @@ export class World {
     return treeGroup;
   }
 
-  addPineNeedleDetails(treeGroup, trunkHeight, heightVariation, greenShades) {
+  addPineNeedleDetails(
+    treeGroup: THREE.Group,
+    trunkHeight: number,
+    heightVariation: number,
+    greenShades: number[]
+  ): void {
     // Add small needle-like clusters for realism
     const numNeedleClusters = 15 + Math.floor(Math.random() * 10);
-    
+
     for (let i = 0; i < numNeedleClusters; i++) {
       const needleHeight = trunkHeight + Math.random() * 3 * heightVariation;
       const angle = Math.random() * Math.PI * 2;
-      const radius = (Math.random() * 1.5 + 0.5) * (1 - (needleHeight - trunkHeight) / (3 * heightVariation));
-      
+      const radius =
+        (Math.random() * 1.5 + 0.5) *
+        (1 - (needleHeight - trunkHeight) / (3 * heightVariation));
+
       // Create small elongated shapes for needle clusters
       const needleGeometry = new THREE.CylinderGeometry(
         0.02,
@@ -525,51 +548,56 @@ export class World {
         0.2 + Math.random() * 0.15,
         4
       );
-      
+
       const colorIndex = Math.floor(Math.random() * greenShades.length);
-      const needleMaterial = new THREE.MeshLambertMaterial({ 
+      const needleMaterial = new THREE.MeshLambertMaterial({
         color: greenShades[colorIndex],
         transparent: true,
-        opacity: 0.8
+        opacity: 0.8,
       });
-      
+
       const needle = new THREE.Mesh(needleGeometry, needleMaterial);
       needle.position.set(
         Math.cos(angle) * radius,
         needleHeight,
         Math.sin(angle) * radius
       );
-      
+
       // Orient needles to point outward and slightly downward
-      needle.rotation.z = Math.PI / 3 + Math.random() * Math.PI / 6;
+      needle.rotation.z = Math.PI / 3 + (Math.random() * Math.PI) / 6;
       needle.rotation.y = angle;
       needle.rotation.x = Math.random() * 0.3;
-      
+
       treeGroup.add(needle);
     }
   }
 
-  addSecondaryBranches(treeGroup, baseHeight, radius, greenShades) {
+  addSecondaryBranches(
+    treeGroup: THREE.Group,
+    baseHeight: number,
+    radius: number,
+    greenShades: number[]
+  ): void {
     const numBranches = 3 + Math.floor(Math.random() * 4);
-    
+
     for (let i = 0; i < numBranches; i++) {
       const angle = (Math.PI * 2 * i) / numBranches + Math.random() * 0.8;
       const branchRadius = 0.2 + Math.random() * 0.15;
-      const branchLength = 0.5 + Math.random() * 0.4;
-      
+      //   const branchLength = 0.5 + Math.random() * 0.4;
+
       // Create organic branch shape using deformed sphere
       const branchGeometry = new THREE.SphereGeometry(branchRadius, 8, 6);
-      
+
       // Deform to make it branch-like
       const vertices = branchGeometry.attributes.position.array;
       for (let j = 0; j < vertices.length; j += 3) {
         const x = vertices[j];
         const y = vertices[j + 1];
-        const z = vertices[j + 2];
-        
+        // const z = vertices[j + 2];
+
         // Stretch along one axis to make it branch-like
         vertices[j + 1] *= 2.5; // Stretch vertically
-        
+
         // Add some organic variation
         const noise = Math.sin(x * 8 + y * 6) * 0.1;
         vertices[j] += noise;
@@ -577,50 +605,55 @@ export class World {
       }
       branchGeometry.attributes.position.needsUpdate = true;
       branchGeometry.computeVertexNormals();
-      
+
       const colorIndex = Math.floor(Math.random() * greenShades.length);
-      const branchMaterial = new THREE.MeshLambertMaterial({ 
+      const branchMaterial = new THREE.MeshLambertMaterial({
         color: greenShades[colorIndex],
         transparent: true,
-        opacity: 0.9
+        opacity: 0.9,
       });
-      
+
       const branch = new THREE.Mesh(branchGeometry, branchMaterial);
       branch.position.set(
         Math.cos(angle) * radius * 0.7,
         baseHeight - 0.3 + Math.random() * 0.6,
         Math.sin(angle) * radius * 0.7
       );
-      
+
       // Orient branch outward and slightly downward
-      branch.rotation.z = Math.PI / 4 + Math.random() * Math.PI / 8;
+      branch.rotation.z = Math.PI / 4 + (Math.random() * Math.PI) / 8;
       branch.rotation.y = angle;
       branch.rotation.x = Math.random() * 0.3;
-      
+
       branch.castShadow = true;
       treeGroup.add(branch);
     }
   }
 
-  addRealisticSnow(treeGroup, numLayers, trunkHeight, widthVariation) {
+  addRealisticSnow(
+    treeGroup: THREE.Group,
+    numLayers: number,
+    trunkHeight: number,
+    widthVariation: number
+  ): void {
     // Snow accumulates differently on different parts of the tree
     const snowAmount = 0.3 + Math.random() * 0.4; // Varying snow accumulation
-    
+
     for (let layer = 0; layer < numLayers; layer++) {
       if (Math.random() < snowAmount) {
-        const layerHeight = trunkHeight + (layer * 0.8) + 0.5;
+        const layerHeight = trunkHeight + layer * 0.8 + 0.5;
         const layerRadius = (2.5 - layer * 0.3) * widthVariation;
-        
+
         // Snow cap on foliage layers
         const snowGeometry = new THREE.ConeGeometry(
-          layerRadius + 0.1, 
-          0.1 + Math.random() * 0.1, 
+          layerRadius + 0.1,
+          0.1 + Math.random() * 0.1,
           8
         );
-        const snowMaterial = new THREE.MeshLambertMaterial({ 
+        const snowMaterial = new THREE.MeshLambertMaterial({
           color: 0xffffff,
           transparent: true,
-          opacity: 0.9
+          opacity: 0.9,
         });
         const snow = new THREE.Mesh(snowGeometry, snowMaterial);
         snow.position.y = layerHeight + 0.6;
@@ -632,10 +665,10 @@ export class World {
     // Snow on trunk (bark showing through)
     if (Math.random() > 0.4) {
       const trunkSnowGeometry = new THREE.CylinderGeometry(0.4, 0.5, 0.3, 8);
-      const trunkSnowMaterial = new THREE.MeshLambertMaterial({ 
+      const trunkSnowMaterial = new THREE.MeshLambertMaterial({
         color: 0xf8f8ff,
         transparent: true,
-        opacity: 0.8
+        opacity: 0.8,
       });
       const trunkSnow = new THREE.Mesh(trunkSnowGeometry, trunkSnowMaterial);
       trunkSnow.position.y = 0.2 + Math.random() * 0.3;
@@ -643,35 +676,243 @@ export class World {
     }
   }
 
-  addBranchDetails(treeGroup, trunkHeight, heightVariation) {
+  addBranchDetails(
+    treeGroup: THREE.Group,
+    trunkHeight: number,
+    _heightVariation: number
+  ): void {
     // Add small protruding branches on the trunk
     const numTrunkBranches = 2 + Math.floor(Math.random() * 4);
-    
+
     for (let i = 0; i < numTrunkBranches; i++) {
-      const branchGeometry = new THREE.CylinderGeometry(0.02, 0.04, 0.3 + Math.random() * 0.2, 4);
+      const branchGeometry = new THREE.CylinderGeometry(
+        0.02,
+        0.04,
+        0.3 + Math.random() * 0.2,
+        4
+      );
       const branchMaterial = new THREE.MeshLambertMaterial({ color: 0x3d2f1f });
       const branch = new THREE.Mesh(branchGeometry, branchMaterial);
-      
+
       const angle = Math.random() * Math.PI * 2;
       const height = Math.random() * trunkHeight * 0.8;
       const distance = 0.35 + Math.random() * 0.1;
-      
+
       branch.position.set(
         Math.cos(angle) * distance,
         height,
         Math.sin(angle) * distance
       );
-      
+
       // Angle the branch outward and slightly upward
-      branch.rotation.z = Math.PI / 4 + Math.random() * Math.PI / 6;
+      branch.rotation.z = Math.PI / 4 + (Math.random() * Math.PI) / 6;
       branch.rotation.y = angle;
-      
+
       branch.castShadow = true;
       treeGroup.add(branch);
     }
   }
 
-  createObstacles() {
+  //   createObstacles() {
+  //     // Create some rocks and barriers
+  //     for (let i = 0; i < 15; i++) {
+  //       const obstacle = this.createRock();
+
+  //       obstacle.position.set(
+  //         (Math.random() - 0.5) * 160,
+  //         0,
+  //         (Math.random() - 0.5) * 160
+  //       );
+
+  //       this.obstacles.push(obstacle);
+  //       this.scene.add(obstacle);
+  //     }
+
+  //     // Create some snow walls/barriers
+  //     for (let i = 0; i < 8; i++) {
+  //       const wall = this.createSnowWall();
+
+  //       wall.position.set(
+  //         (Math.random() - 0.5) * 120,
+  //         0,
+  //         (Math.random() - 0.5) * 120
+  //       );
+
+  //       wall.rotation.y = Math.random() * Math.PI * 2;
+  //       this.obstacles.push(wall);
+  //       this.scene.add(wall);
+  //     }
+  //   }
+
+  //   createTrees(): void {
+  //     // Create simple pine trees scattered around
+  //     for (let i = 0; i < 30; i++) {
+  //       const tree = this.createTree();
+
+  //       // Random position
+  //       tree.position.set(
+  //         (Math.random() - 0.5) * 180,
+  //         0,
+  //         (Math.random() - 0.5) * 180
+  //       );
+
+  //       this.trees.push(tree);
+  //       this.scene.add(tree);
+  //     }
+  //   }
+
+  //   createTree(): THREE.Group {
+  //     const treeGroup = new THREE.Group();
+
+  //     // Tree trunk
+  //     const trunkGeometry = new THREE.CylinderGeometry(0.3, 0.4, 3, 8);
+  //     const trunkMaterial = new THREE.MeshLambertMaterial({ color: 0x8b4513 });
+  //     const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+  //     trunk.position.y = 1.5;
+  //     trunk.castShadow = true;
+  //     treeGroup.add(trunk);
+
+  //     // Tree foliage (pine cone shape)
+  //     const foliageGeometry = new THREE.ConeGeometry(2, 4, 8);
+  //     const foliageMaterial = new THREE.MeshLambertMaterial({ color: 0x0d5016 });
+  //     const foliage = new THREE.Mesh(foliageGeometry, foliageMaterial);
+  //     foliage.position.y = 4.5;
+  //     foliage.castShadow = true;
+  //     treeGroup.add(foliage);
+
+  //     // Lower foliage layer
+  //     const foliage2 = new THREE.Mesh(foliageGeometry.clone(), foliageMaterial);
+  //     foliage2.position.y = 3;
+  //     foliage2.scale.set(1.2, 0.8, 1.2);
+  //     foliage2.castShadow = true;
+  //     treeGroup.add(foliage2);
+
+  //     // Snow on tree
+  //     const snowGeometry = new THREE.ConeGeometry(2.1, 0.2, 8);
+  //     const snowMaterial = new THREE.MeshLambertMaterial({
+  //       color: 0xffffff,
+  //     });
+  //     const snow = new THREE.Mesh(snowGeometry, snowMaterial);
+  //     snow.position.y = 6.4;
+  //     treeGroup.add(snow);
+
+  //     return treeGroup;
+  //   }
+  //   createTree(): THREE.Group {
+  //     const treeGroup = new THREE.Group();
+
+  //     // Random tree scale for cartoonish variety
+  //     const treeScale = 0.7 + Math.random() * 0.8; // 0.7 to 1.5 scale
+
+  //     // Blobby, round trunk - more like a cartoon
+  //     const trunkHeight = 1.8 + Math.random() * 1.2;
+  //     const trunkGeometry = new THREE.CylinderGeometry(
+  //       0.4 * treeScale,
+  //       0.5 * treeScale,
+  //       trunkHeight,
+  //       16
+  //     );
+  //     const trunkColors = [0x8b4513, 0xa0522d, 0x654321, 0x9b6b3b];
+  //     const trunkMaterial = new THREE.MeshLambertMaterial({
+  //       color: trunkColors[Math.floor(Math.random() * trunkColors.length)],
+  //     });
+  //     const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+  //     trunk.position.y = trunkHeight / 2;
+  //     trunk.castShadow = true;
+  //     treeGroup.add(trunk);
+
+  //     // Dreamy, blobby foliage using spheres instead of cones
+  //     const foliageColors = [0x2e7d32, 0x4caf50, 0x66bb6a, 0x81c784];
+  //     const foliageColor =
+  //       foliageColors[Math.floor(Math.random() * foliageColors.length)];
+  //     const foliageMaterial = new THREE.MeshLambertMaterial({
+  //       color: foliageColor,
+  //     });
+
+  //     // Bottom blob (largest and most squished)
+  //     const bottomRadius = 1.8 * treeScale;
+  //     const bottomFoliage = new THREE.SphereGeometry(bottomRadius, 12, 8);
+  //     const bottomLayer = new THREE.Mesh(bottomFoliage, foliageMaterial);
+  //     bottomLayer.position.y = trunkHeight + 0.3;
+  //     bottomLayer.scale.set(1, 0.7, 1); // Squish it down for blob effect
+  //     bottomLayer.castShadow = true;
+  //     treeGroup.add(bottomLayer);
+
+  //     // Middle blob
+  //     const middleRadius = 1.4 * treeScale;
+  //     const middleFoliage = new THREE.SphereGeometry(middleRadius, 12, 8);
+  //     const middleLayer = new THREE.Mesh(middleFoliage, foliageMaterial);
+  //     middleLayer.position.y = trunkHeight + 1.2;
+  //     middleLayer.scale.set(1, 0.8, 1); // Slightly less squished
+  //     middleLayer.castShadow = true;
+  //     treeGroup.add(middleLayer);
+
+  //     // Top blob (smallest and roundest)
+  //     const topRadius = 1.0 * treeScale;
+  //     const topFoliage = new THREE.SphereGeometry(topRadius, 12, 8);
+  //     const topLayer = new THREE.Mesh(topFoliage, foliageMaterial);
+  //     topLayer.position.y = trunkHeight + 2.1;
+  //     topLayer.scale.set(1, 0.9, 1); // Almost round
+  //     topLayer.castShadow = true;
+  //     treeGroup.add(topLayer);
+
+  //     // Dreamy snow blobs on top of each foliage blob
+  //     const snowMaterial = new THREE.MeshLambertMaterial({ color: 0xffffff });
+
+  //     // Snow blob on bottom layer
+  //     const bottomSnowRadius = bottomRadius * 0.3;
+  //     const bottomSnow = new THREE.SphereGeometry(bottomSnowRadius, 8, 6);
+  //     const bottomSnowMesh = new THREE.Mesh(bottomSnow, snowMaterial);
+  //     bottomSnowMesh.position.y = trunkHeight + 0.3 + bottomRadius * 0.7 * 0.7;
+  //     bottomSnowMesh.scale.set(1.2, 0.4, 1.2); // Flat snow blob
+  //     treeGroup.add(bottomSnowMesh);
+
+  //     // Snow blob on middle layer
+  //     const middleSnowRadius = middleRadius * 0.3;
+  //     const middleSnow = new THREE.SphereGeometry(middleSnowRadius, 8, 6);
+  //     const middleSnowMesh = new THREE.Mesh(middleSnow, snowMaterial);
+  //     middleSnowMesh.position.y = trunkHeight + 1.2 + middleRadius * 0.8 * 0.8;
+  //     middleSnowMesh.scale.set(1.1, 0.4, 1.1);
+  //     treeGroup.add(middleSnowMesh);
+
+  //     // Snow blob on top layer
+  //     const topSnowRadius = topRadius * 0.35;
+  //     const topSnow = new THREE.SphereGeometry(topSnowRadius, 8, 6);
+  //     const topSnowMesh = new THREE.Mesh(topSnow, snowMaterial);
+  //     topSnowMesh.position.y = trunkHeight + 2.1 + topRadius * 0.9 * 0.9;
+  //     topSnowMesh.scale.set(1, 0.5, 1);
+  //     treeGroup.add(topSnowMesh);
+
+  //     // Add some whimsical floating snow puffs around the tree
+  //     for (let i = 0; i < 2 + Math.floor(Math.random() * 3); i++) {
+  //       const puffRadius = 0.15 + Math.random() * 0.1;
+  //       const puffGeometry = new THREE.SphereGeometry(puffRadius, 6, 4);
+  //       const puff = new THREE.Mesh(puffGeometry, snowMaterial);
+
+  //       const angle = Math.random() * Math.PI * 2;
+  //       const distance = 1.5 + Math.random() * 1;
+  //       const height = trunkHeight + Math.random() * 2;
+
+  //       puff.position.set(
+  //         Math.cos(angle) * distance,
+  //         height,
+  //         Math.sin(angle) * distance
+  //       );
+
+  //       treeGroup.add(puff);
+  //     }
+
+  //     // Cartoonish wobbly rotation
+  //     treeGroup.rotation.y = Math.random() * Math.PI * 2;
+
+  //     // Dreamy swaying effect
+  //     treeGroup.rotation.z = (Math.random() - 0.5) * 0.2;
+  //     treeGroup.rotation.x = (Math.random() - 0.5) * 0.15;
+
+  //     return treeGroup;
+  //   }
+
+  createObstacles(): void {
     // Create some rocks and barriers
     for (let i = 0; i < 15; i++) {
       const obstacle = this.createRock();
@@ -702,14 +943,18 @@ export class World {
     }
   }
 
-  createRock() {
+  createRock(): THREE.Mesh {
     const rockGeometry = new THREE.DodecahedronGeometry(
       Math.random() * 1 + 0.5
     );
-    const rockMaterial = new THREE.MeshLambertMaterial({ color: 0x666666 });
+    const greyColors = [0x666666, 0x888888, 0x444444, 0xaaaaaa];
+    const randomColor =
+      greyColors[Math.floor(Math.random() * greyColors.length)];
+    const rockMaterial = new THREE.MeshLambertMaterial({ color: randomColor });
+
     const rock = new THREE.Mesh(rockGeometry, rockMaterial);
 
-    rock.position.y = rock.geometry.parameters.radius;
+    rock.position.y = (rockGeometry.parameters as any).radius || 0.5;
     rock.rotation.set(
       Math.random() * Math.PI,
       Math.random() * Math.PI,
@@ -722,19 +967,22 @@ export class World {
     return rock;
   }
 
-  createSnowWall() {
+  createSnowWall(): THREE.Group {
     const wallGroup = new THREE.Group();
 
-    // Main wall
-    const wallGeometry = new THREE.BoxGeometry(6, 2, 0.5);
-    const wallMaterial = new THREE.MeshLambertMaterial({ color: 0xf8f8ff });
+    // Main wall - doubled height (4 instead of 2), positioned lower
+    const wallGeometry = new THREE.BoxGeometry(6, 4, 0.5);
+    const wallColors = [0x994300, 0x7c5c2a, 0xbfa76f];
+    const wallMaterial = new THREE.MeshLambertMaterial({
+      color: wallColors[Math.floor(Math.random() * wallColors.length)],
+    });
     const wall = new THREE.Mesh(wallGeometry, wallMaterial);
-    wall.position.y = 1;
+    wall.position.y = 0; // Lowered from 1 to 0, so it extends -2 to +2 (going deeper underground)
     wall.castShadow = true;
     wall.receiveShadow = true;
     wallGroup.add(wall);
 
-    // Snow cap on top
+    // Snow cap on top - keep at same height as before
     const capGeometry = new THREE.BoxGeometry(6.2, 0.3, 0.8);
     const cap = new THREE.Mesh(capGeometry, wallMaterial);
     cap.position.y = 2.15;
@@ -743,7 +991,7 @@ export class World {
     return wallGroup;
   }
 
-  createSkybox() {
+  createSkybox(): void {
     // Create a simple gradient sky dome
     const skyGeometry = new THREE.SphereGeometry(
       500,
@@ -768,7 +1016,7 @@ export class World {
     this.createClouds();
   }
 
-  createClouds() {
+  createClouds(): void {
     for (let i = 0; i < 12; i++) {
       const cloud = this.createCloud();
 
@@ -782,7 +1030,7 @@ export class World {
     }
   }
 
-  createCloud() {
+  createCloud(): THREE.Group {
     const cloudGroup = new THREE.Group();
     const cloudMaterial = new THREE.MeshBasicMaterial({
       color: 0xffffff,
@@ -811,14 +1059,17 @@ export class World {
     return cloudGroup;
   }
 
-  update(deltaTime) {
+  update(deltaTime: number): void {
     // Animate clouds slowly
     this.scene.children.forEach((child) => {
       if (
         child.type === "Group" &&
-        child.children.length > 0 &&
-        child.children[0].material &&
-        child.children[0].material.opacity === 0.7
+        (child as THREE.Group).children.length > 0 &&
+        ((child as THREE.Group).children[0] as THREE.Mesh).material &&
+        (
+          ((child as THREE.Group).children[0] as THREE.Mesh)
+            .material as THREE.MeshBasicMaterial
+        ).opacity === 0.7
       ) {
         child.rotation.y += deltaTime * 0.01;
         child.position.x += deltaTime * 0.5;
@@ -828,36 +1079,6 @@ export class World {
           child.position.x = -200;
         }
       }
-    });
-
-    // Animate trees with wind effect
-    const windTime = Date.now() * 0.001;
-    this.trees.forEach((tree, index) => {
-      // Create subtle wind movement
-      const windStrength = 0.05 + Math.sin(windTime * 0.3 + index * 0.1) * 0.03;
-      const windDirection = Math.sin(windTime * 0.2 + index * 0.05) * 0.4;
-      
-      // Apply wind to foliage layers (skip trunk)
-      tree.children.forEach((child, childIndex) => {
-        if (child.geometry && child.geometry.type === 'ConeGeometry') {
-          // Foliage layers sway in the wind
-          const heightFactor = child.position.y / 8; // Higher layers move more
-          const layerWind = windStrength * heightFactor;
-          
-          child.rotation.z = windDirection * layerWind;
-          child.rotation.x = Math.sin(windTime * 0.4 + childIndex * 0.2) * layerWind * 0.5;
-          
-          // Add subtle scale breathing effect
-          const breathe = 1 + Math.sin(windTime * 0.6 + index * 0.3) * 0.02;
-          child.scale.x = breathe;
-          child.scale.z = breathe;
-        }
-      });
-
-      // Very subtle tree base movement
-      const treeMovement = Math.sin(windTime * 0.15 + index * 0.1) * 0.01;
-      tree.rotation.z = treeMovement;
-      tree.rotation.x = Math.cos(windTime * 0.1 + index * 0.15) * treeMovement * 0.5;
     });
   }
 }

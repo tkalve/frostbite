@@ -2,7 +2,12 @@
     "name": "frostbite-client",
     "version": "1.0.0",
     "description": "3D multiplayer snowball fighting game client",
-    "main": "src/main.js",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/tkalve/frostbite",
+        "directory": "client"
+    },
+    "main": "src/main.tsx",
     "scripts": {
         "dev": "vite",
         "build": "vite build",
@@ -11,11 +16,16 @@
     },
     "dependencies": {
         "@microsoft/signalr": "^9.0.6",
-        "socket.io-client": "^4.7.2",
-        "three": "^0.157.0"
+        "react": "^19.1.1",
+        "react-dom": "^19.1.1",
+        "three": "^0.180.0"
     },
     "devDependencies": {
-        "vite": "^4.4.9"
-    },
-    "type": "module"
+        "@types/react": "^19.1.12",
+        "@types/react-dom": "^19.1.9",
+        "@types/three": "^0.180.0",
+        "@vitejs/plugin-react": "^5.0.2",
+        "typescript": "^5.9.2",
+        "vite": "^7.1.2"
+    }
 }
