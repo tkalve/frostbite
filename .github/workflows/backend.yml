@@ -20,7 +20,7 @@ jobs:
       - name: Build and push to registry
         run: |
           az acr login \
-            --registry ${{ secrets.ACR_NAME }}
+            --name ${{ secrets.ACR_NAME }}
             --username ${{ secrets.ACR_USERNAME }}
             --password ${{ secrets.ACR_PASSWORD }}
           az acr build \
