@@ -1,4 +1,4 @@
-name: Build and deploy backend
+name: Build and push image
 
 on:
   workflow_dispatch
@@ -10,34 +10,20 @@ on:
 
 env:
   AZURE_CONTAINER_REGISTRY: frostbiteacr
-  RESOURCE_GROUP: frostbite-rg
   IMAGE_NAME: frostbite-backend
-  CONTAINER_APP: frostbite-backend-ca
 
 jobs:
   backend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Azure login
-        uses: azure/login@v2
-        with:
-          auth-type: IDENTITY
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-
       - name: Build and push to registry
         run: |
+          az acr login \
+            --registry ${{ secrets.ACR_NAME }}
+            --username ${{ secrets.ACR_USERNAME }}
+            --password ${{ secrets.ACR_PASSWORD }}
           az acr build \
-            --registry $AZURE_CONTAINER_REGISTRY \
+            --registry ${{ secrets.ACR_NAME }} \
             --image $IMAGE_NAME:latest \
             ./backend
-
-      - name: Update app with new image
-        run: |
-          az containerapp update \
-            --name $CONTAINER_APP \
-            --resource-group $RESOURCE_GROUP \
-            --image $AZURE_CONTAINER_REGISTRY.azurecr.io/$IMAGE_NAME:latest
