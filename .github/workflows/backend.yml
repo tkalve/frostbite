@@ -1,11 +1,12 @@
 name: Build and deploy backend
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "backend/**"
+  workflow_dispatch
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - "backend/**"
 
 env:
   AZURE_CONTAINER_REGISTRY: frostbiteacr

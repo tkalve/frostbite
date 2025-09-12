@@ -1,11 +1,12 @@
 name: Build and deploy client
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "client/**"
+  workflow_dispatch
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - "client/**"
 
 env:
   AZURE_CONTAINER_REGISTRY: frostbiteacr
