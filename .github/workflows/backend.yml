@@ -9,21 +9,21 @@ on:
   #     - "backend/**"
 
 env:
-  AZURE_CONTAINER_REGISTRY: frostbiteacr
-  IMAGE_NAME: frostbite-backend
+  IMAGE_NAME: frostbite/backend
 
 jobs:
   backend:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build and push to registry
+      - name: Checkout repository
+
+      - name: Log in to registry
         run: |
-          az acr login \
-            --name ${{ secrets.ACR_NAME }}
-            --username ${{ secrets.ACR_USERNAME }}
-            --password ${{ secrets.ACR_PASSWORD }}
-          az acr build \
-            --registry ${{ secrets.ACR_NAME }} \
-            --image $IMAGE_NAME:latest \
-            ./backend
+          echo "${{ secrets.ACR_PASSWORD }}" | docker login ${{ secrets.ACR_NAME }}.azurecr.io \
+            -u ${{ secrets.ACR_USERNAME }} --password-stdin
+
+      - name: Build and push backend
+        run: |
+          docker build -t ${{ secrets.ACR_NAME }}.azurecr.io/$IMAGE_NAME:latest ./backend
+          docker push ${{ secrets.ACR_NAME }}.azurecr.io/$IMAGE_NAME:latest
